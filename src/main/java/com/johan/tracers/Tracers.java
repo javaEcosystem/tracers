@@ -1,16 +1,15 @@
 package com.johan.tracers;
 
-import com.johan.tracers.commands.AddFriend;
-import com.johan.tracers.commands.ListFriends;
-import com.johan.tracers.commands.RemoveFriend;
+import com.johan.tracers.commands.*;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-
 import net.minecraft.util.EnumChatFormatting;
+
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;

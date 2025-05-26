@@ -4,8 +4,8 @@
 [Features]
 
 -> Add friends to your list using : /addfriend name or /adf name
--> Remove friends from your list using : /rmfriend name or /rmf name
--> List your friends using : /lsfriends or /lsf
+-> Remove friends from your list using : /rmfriend name or /rmf name or /removefriend name
+-> List your friends using : /lsfriends or /lsf or /listfriends
 -> Tracers are colored as follow : green rays for friends , white rays for other players
 -> FPS display
 

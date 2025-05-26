@@ -7,6 +7,7 @@
 -> Remove friends from your list using : /rmfriend name or /rmf name or /removefriend name
 -> List your friends using : /lsfriends or /lsf or /listfriends
 -> Tracers are colored as follow : green rays for friends , white rays for other players
+-> Toggle tracers using the keybinding that you can set in minecraft controls settings
 -> FPS display
 
 

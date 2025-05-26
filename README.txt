@@ -14,5 +14,6 @@
 
 -> Use IntelliJ IDEA 2021.1
 -> Use java 8 jdk
+-> Set language level to 6 - @Override in interfaces
 -> Run ./gradlew build
 -> The .jar file will be located at ./build/libs/

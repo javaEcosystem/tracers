@@ -11,6 +11,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.EnumChatFormatting;
 
 import net.minecraftforge.client.ClientCommandHandler;
+import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -20,11 +22,14 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 @Mod(modid = Tracers.mod_id, version = Tracers.version)
 public class Tracers
@@ -42,9 +47,16 @@ public class Tracers
     // Controls whether tracer lines are rendered
     private boolean showRays = false;
 
+    // Setup the built-in config utility
+    private static Configuration config;
+    private static final File CONFIG_DIR = new File(Minecraft.getMinecraft().mcDataDir, "config");
+
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
+        // Initialize configuration
+        config = new Configuration(new File(CONFIG_DIR, "tracers.cfg"));
+
         // Listen to @SubscribeEvents
         MinecraftForge.EVENT_BUS.register(this);
 
@@ -55,6 +67,24 @@ public class Tracers
         ClientCommandHandler.instance.registerCommand(new AddFriend());
         ClientCommandHandler.instance.registerCommand(new ListFriends());
         ClientCommandHandler.instance.registerCommand(new RemoveFriend());
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
+    {
+        // Load friends list when joining a server
+        if (event.player == mc.thePlayer) {
+            loadFriendsList();
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event)
+    {
+        // Save friends list when leaving a server
+        if (event.player == mc.thePlayer) {
+            saveFriendsList();
+        }
     }
 
     @SubscribeEvent
@@ -141,4 +171,25 @@ public class Tracers
         GlStateManager.enableDepth();
         GlStateManager.enableTexture2D();
     }
+
+    private void loadFriendsList() {
+        try {
+            config.load();
+            Property friendsProp = config.get("friends", "list", new String[0]);
+            friends.clear();
+            friends.addAll(Arrays.asList(friendsProp.getStringList()));
+        } catch (Exception e) {
+            System.err.println("Failed to load friends list: " + e.getMessage());
+        }
+    }
+
+    private void saveFriendsList() {
+        try {
+            config.get("friends", "list", new String[0]).set(friends.toArray(new String[0]));
+            config.save();
+        } catch (Exception e) {
+            System.err.println("Failed to save friends list: " + e.getMessage());
+        }
+    }
+
 }

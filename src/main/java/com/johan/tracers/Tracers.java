@@ -2,14 +2,21 @@ package com.johan.tracers;
 
 import com.johan.tracers.commands.*;
 
+// minecraft lib
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.Vec3;
 
+// forge lib
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
@@ -24,46 +31,57 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 
+// lwjgl lib
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
+// java lib
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 @Mod(modid = Tracers.mod_id, version = Tracers.version)
 public class Tracers
 {
-    // Global variables
+    // global variables
     public static final Minecraft mc = Minecraft.getMinecraft();
     public static final String mod_id = "tracers";
-    public static final String version = "1.1";
+    public static final String version = "1.2";
     public static final String chatPrefix = EnumChatFormatting.DARK_RED + "[Tracers] ";
     public static ArrayList<String> friends = new ArrayList<String>();
 
-    // Toggle key for tracer visibility
-    private final KeyBinding tracers = new KeyBinding("Toggle Rays", Keyboard.KEY_C, "Tracers");
+    // boolean variables
+    private boolean showPlayerRays = false;
+    private boolean showItemRays = false;
+    private boolean hasRareEnchantedItem = false;
 
-    // Controls whether tracer lines are rendered
-    private boolean showRays = false;
+    // keys to toggle tracers visibility
+    private final KeyBinding playerRaysKey = new KeyBinding("Toggle Player Rays", Keyboard.KEY_C, "Tracers");
+    private final KeyBinding itemRaysKey = new KeyBinding("Toggle Item Rays", Keyboard.KEY_X, "Tracers");
 
-    // Setup the built-in config utility
+    // distance threshold for grouping items (in blocks)
+    private static final double ITEM_GROUP_DISTANCE = 3.0;
+
+    // list of rare items
+    private static final List<Item> RARE_ITEMS = Collections.unmodifiableList(Arrays.asList(Items.diamond_helmet, Items.diamond_boots, Items.iron_chestplate, Items.iron_sword));
+
+    // setup the built-in config utility
     private static Configuration config;
     private static final File CONFIG_DIR = new File(Minecraft.getMinecraft().mcDataDir, "config");
 
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
-        // Initialize configuration
+        // initialize configuration
         config = new Configuration(new File(CONFIG_DIR, "tracers.cfg"));
 
-        // Listen to @SubscribeEvents
+        // listen to @SubscribeEvents
         MinecraftForge.EVENT_BUS.register(this);
 
-        // Register keybindings
-        ClientRegistry.registerKeyBinding(tracers);
+        // register keybindings
+        ClientRegistry.registerKeyBinding(playerRaysKey);
+        ClientRegistry.registerKeyBinding(itemRaysKey);
 
-        // Register commands
+        // register commands
         ClientCommandHandler.instance.registerCommand(new AddFriend());
         ClientCommandHandler.instance.registerCommand(new ListFriends());
         ClientCommandHandler.instance.registerCommand(new RemoveFriend());
@@ -72,7 +90,7 @@ public class Tracers
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
     {
-        // Load friends list when joining a server
+        // load friends list when joining a server
         if (event.player == mc.thePlayer) {
             loadFriendsList();
         }
@@ -81,7 +99,7 @@ public class Tracers
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event)
     {
-        // Save friends list when leaving a server
+        // save friends list when leaving a server
         if (event.player == mc.thePlayer) {
             saveFriendsList();
         }
@@ -90,24 +108,24 @@ public class Tracers
     @SubscribeEvent
     public void hudEvent(RenderGameOverlayEvent.Post event)
     {
-        // Only render in the TEXT phase (where HUD text belongs)
+        // only render in the TEXT phase (where HUD text belongs)
         if (event.type != RenderGameOverlayEvent.ElementType.TEXT) return;
 
-        // Get Minecraft's font renderer
+        // get Minecraft's font renderer
         FontRenderer renderer = mc.fontRendererObj;
 
-        // Get current Minecraft FPS
+        // get current Minecraft FPS
         int fps = Minecraft.getDebugFPS();
 
-        // Save OpenGL state to prevent HUD corruption
+        // save OpenGL state to prevent HUD corruption
         GlStateManager.pushMatrix();
         GlStateManager.pushAttrib();
         GlStateManager.scale(0.85f, 0.85f, 1.0f);
 
-        // Draw FPS on HUD
+        // draw FPS on HUD
         renderer.drawString("[FPS] " + fps, 350, 5, 0x00FF00);
 
-        // Restore OpenGL state
+        // restore OpenGL state
         GlStateManager.popAttrib();
         GlStateManager.popMatrix();
     }
@@ -115,22 +133,23 @@ public class Tracers
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event)
     {
-        // Toggle rays display
-        if (tracers.isPressed()) { showRays = !showRays; }
+        // toggle rays display
+        if (playerRaysKey.isPressed()) { showPlayerRays = !showPlayerRays; }
+        if (itemRaysKey.isPressed()) { showItemRays = !showItemRays; }
     }
 
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent event)
     {
-        // Leave early if disabled
-        if (!showRays || mc.theWorld == null || mc.thePlayer == null) return;
+        // leave early if all rays are disabled
+        if ((!showPlayerRays && !showItemRays) || mc.theWorld == null || mc.thePlayer == null) return;
 
-        // Get player position (interpolated for smooth rendering)
+        // get player position (interpolated for smooth rendering)
         double playerX = mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * event.partialTicks;
         double playerY = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * event.partialTicks;
         double playerZ = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * event.partialTicks;
 
-        // Prepare OpenGL state for 3D line rendering
+        // prepare OpenGL state for 3D line rendering
         GlStateManager.disableTexture2D();
         GlStateManager.disableDepth();
         GlStateManager.depthMask(false);
@@ -140,29 +159,105 @@ public class Tracers
         GL11.glLineWidth(0.1F);
         GL11.glBegin(GL11.GL_LINES);
 
-        for (Entity entity : mc.theWorld.loadedEntityList)
+        if (showPlayerRays)
         {
-            // Rays target players only
-            if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) continue;
+            for (Entity entity : mc.theWorld.loadedEntityList)
+            {
+                // rays target players only
+                if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) continue;
 
-            // Calculate entity position relative to player
-            double entityX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * event.partialTicks - playerX;
-            double entityY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * event.partialTicks - playerY;
-            double entityZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * event.partialTicks - playerZ;
+                // calculate entity position relative to player
+                double entityX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * event.partialTicks - playerX;
+                double entityY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * event.partialTicks - playerY;
+                double entityZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * event.partialTicks - playerZ;
 
-            // Green ray if friend, white otherwise
-            if(friends.contains(entity.getName())){
-                GL11.glColor4f(0f, 1f, 0f, 0.5f);
-            } else{
-                GL11.glColor4f(1f, 1f, 1f, 0.5f);
+                // green ray if friend, white otherwise
+                if(friends.contains(entity.getName())){
+                    GL11.glColor4f(0f, 1f, 0f, 0.5f);
+                } else{
+                    GL11.glColor4f(1f, 1f, 1f, 0.5f);
+                }
+
+                // draw ray from player to entity
+                GL11.glVertex3d(0, mc.thePlayer.height - 1, 0); // Player position
+                GL11.glVertex3d(entityX, entityY+entity.getEyeHeight(), entityZ);
             }
-
-            // Draw ray from player to entity
-            GL11.glVertex3d(0, mc.thePlayer.height - 1, 0); // Player position
-            GL11.glVertex3d(entityX, entityY+entity.getEyeHeight(), entityZ);
         }
 
-        // Restore default OpenGL state
+        if (showItemRays)
+        {
+            // list of processed items
+            Set<EntityItem> processedItems = new HashSet<EntityItem>();
+
+            // loop through all entities
+            for (Entity entity : mc.theWorld.loadedEntityList) {
+                if (!(entity instanceof EntityItem)) continue;
+
+                // convert entity to items and stack
+                EntityItem entityItem = (EntityItem) entity;
+
+                // skip if we've already processed this item as part of a group
+                if (processedItems.contains(entityItem)) continue;
+
+                // variables to track group properties
+                Vec3 groupCenter = new Vec3(entityItem.posX, entityItem.posY, entityItem.posZ);
+                int itemCount = 1;
+                hasRareEnchantedItem = false;
+
+                // check if the current item is rare+enchanted
+                checkRarity(entityItem);
+
+                // loop again to check for nearby items
+                for (Entity otherEntity : mc.theWorld.loadedEntityList) {
+                    if (!(otherEntity instanceof EntityItem) || otherEntity == entityItem) continue;
+                    EntityItem otherItem = (EntityItem) otherEntity;
+
+                    // get distance between initial item and nearby item
+                    double distance = entityItem.getDistanceToEntity(otherItem);
+
+                    // compare it to our limit
+                    if (distance <= ITEM_GROUP_DISTANCE) {
+                        groupCenter = new Vec3(
+                                groupCenter.xCoord + otherItem.posX,
+                                groupCenter.yCoord + otherItem.posY,
+                                groupCenter.zCoord + otherItem.posZ
+                        );
+                        itemCount++;
+
+                        // add the item to the list if close enough
+                        processedItems.add(otherItem);
+
+                        // check if this nearby item is rare+enchanted
+                        checkRarity(otherItem);
+                    }
+                }
+
+                // calculate average position for the group
+                groupCenter = new Vec3(
+                        groupCenter.xCoord / itemCount,
+                        groupCenter.yCoord / itemCount,
+                        groupCenter.zCoord / itemCount
+                );
+
+                // calculate position relative to player
+                double itemX = groupCenter.xCoord - playerX;
+                double itemY = groupCenter.yCoord - playerY;
+                double itemZ = groupCenter.zCoord - playerZ;
+
+                // neon pink ray if rare, yellow otherwise
+                if (hasRareEnchantedItem) {
+                    GL11.glColor4f(1f, 0.08f, 0.58f, 0.5f);
+                } else {
+                    GL11.glColor4f(1f, 1f, 0f, 0.5f);
+                }
+
+                // draw ray from player to item group
+                GL11.glVertex3d(0, mc.thePlayer.height - 1, 0); // Player position
+                GL11.glVertex3d(itemX, itemY, itemZ);
+            }
+        }
+
+        // restore default OpenGL state
         GL11.glEnd();
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         GL11.glColor4f(1f, 1f, 1f, 1f);
@@ -170,6 +265,16 @@ public class Tracers
         GlStateManager.depthMask(true);
         GlStateManager.enableDepth();
         GlStateManager.enableTexture2D();
+    }
+
+
+    // helper methods
+
+    private void checkRarity(EntityItem i){
+        ItemStack s = i.getEntityItem();
+        if (RARE_ITEMS.contains(s.getItem()) && s.hasEffect()) {
+            hasRareEnchantedItem = true;
+        }
     }
 
     private void loadFriendsList() {

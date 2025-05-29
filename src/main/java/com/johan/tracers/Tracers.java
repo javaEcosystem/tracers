@@ -45,7 +45,7 @@ public class Tracers
 {
     // global variables
     public static final Minecraft mc = Minecraft.getMinecraft();
-    public static final String mod_id = "tracers";
+    public static final String mod_id = "fps";
     public static final String version = "1.2";
     public static final String chatPrefix = EnumChatFormatting.DARK_RED + "[Tracers] ";
     public static ArrayList<String> friends = new ArrayList<String>();
@@ -198,6 +198,9 @@ public class Tracers
                 EntityItem entityItem = (EntityItem) entity;
                 ItemStack stack = entityItem.getEntityItem();
 
+                // skip if item Y pos < 55
+                if(entityItem.posY<55) continue;
+
                 // skip if item is a building block
                 if (isBuildingItem(stack)) continue;
 
@@ -290,11 +293,6 @@ public class Tracers
 
         // skip if item is a block
         return item instanceof ItemBlock;
-
-        /* alternative : skip items from the 'Building Blocks' creative tab
-        if (item.getCreativeTab() != null && item.getCreativeTab().getTabLabel().equalsIgnoreCase("buildingBlocks")) {
-            return true;
-        }*/
     }
 
     private void loadFriendsList() {

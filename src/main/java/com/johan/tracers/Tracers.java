@@ -12,6 +12,7 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.Vec3;
@@ -193,8 +194,12 @@ public class Tracers
             for (Entity entity : mc.theWorld.loadedEntityList) {
                 if (!(entity instanceof EntityItem)) continue;
 
-                // convert entity to items and stack
+                // convert entity to item and stack
                 EntityItem entityItem = (EntityItem) entity;
+                ItemStack stack = entityItem.getEntityItem();
+
+                // skip if item is a building block
+                if (isBuildingItem(stack)) continue;
 
                 // skip if we've already processed this item as part of a group
                 if (processedItems.contains(entityItem)) continue;
@@ -275,6 +280,21 @@ public class Tracers
         if (RARE_ITEMS.contains(s.getItem()) && s.hasEffect()) {
             hasRareEnchantedItem = true;
         }
+    }
+
+    private boolean isBuildingItem(ItemStack s) {
+        if (s == null || s.getItem() == null) return false;
+
+        // get the item from the stack
+        Item item = s.getItem();
+
+        // skip if item is a block
+        return item instanceof ItemBlock;
+
+        /* alternative : skip items from the 'Building Blocks' creative tab
+        if (item.getCreativeTab() != null && item.getCreativeTab().getTabLabel().equalsIgnoreCase("buildingBlocks")) {
+            return true;
+        }*/
     }
 
     private void loadFriendsList() {

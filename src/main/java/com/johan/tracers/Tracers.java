@@ -14,6 +14,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.Vec3;
 
@@ -53,17 +54,22 @@ public class Tracers
     // boolean variables
     private boolean showPlayerRays = false;
     private boolean showItemRays = false;
+    private boolean showHitboxes = false;
     private boolean hasRareEnchantedItem = false;
 
-    // keys to toggle tracers visibility
+    // keybindings
     private final KeyBinding playerRaysKey = new KeyBinding("Toggle Player Rays", Keyboard.KEY_C, "Tracers");
     private final KeyBinding itemRaysKey = new KeyBinding("Toggle Item Rays", Keyboard.KEY_X, "Tracers");
+    private final KeyBinding hitboxKey = new KeyBinding("Toggle Hitboxes", Keyboard.KEY_W, "Tracers");
 
     // distance threshold for grouping items (in blocks)
-    private static final double ITEM_GROUP_DISTANCE = 3.0;
+    private static final double ITEM_GROUP_DISTANCE = 5.0;
 
     // list of rare items
     private static final List<Item> RARE_ITEMS = Collections.unmodifiableList(Arrays.asList(Items.diamond_helmet, Items.diamond_boots, Items.iron_chestplate, Items.iron_sword));
+
+    // list of items to skip
+    private static final List<Item> ITEMS_TO_SKIP = Collections.unmodifiableList(Arrays.asList(Items.egg, Items.snowball, Items.gold_nugget, Items.gold_ingot, Items.iron_ingot));
 
     // setup the built-in config utility
     private static Configuration config;
@@ -81,6 +87,7 @@ public class Tracers
         // register keybindings
         ClientRegistry.registerKeyBinding(playerRaysKey);
         ClientRegistry.registerKeyBinding(itemRaysKey);
+        ClientRegistry.registerKeyBinding(hitboxKey);
 
         // register commands
         ClientCommandHandler.instance.registerCommand(new AddFriend());
@@ -134,16 +141,17 @@ public class Tracers
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event)
     {
-        // toggle rays display
+        // toggle displays
         if (playerRaysKey.isPressed()) { showPlayerRays = !showPlayerRays; }
         if (itemRaysKey.isPressed()) { showItemRays = !showItemRays; }
+        if (hitboxKey.isPressed()) { showHitboxes = !showHitboxes; }
     }
 
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent event)
     {
-        // leave early if all rays are disabled
-        if ((!showPlayerRays && !showItemRays) || mc.theWorld == null || mc.thePlayer == null) return;
+        // leave early if all features are disabled
+        if ((!showPlayerRays && !showItemRays && !showHitboxes) || mc.theWorld == null || mc.thePlayer == null) return;
 
         // get player position (interpolated for smooth rendering)
         double playerX = mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * event.partialTicks;
@@ -180,7 +188,7 @@ public class Tracers
                 }
 
                 // draw ray from player to entity
-                GL11.glVertex3d(0, mc.thePlayer.height - 1, 0); // Player position
+                GL11.glVertex3d(0, mc.thePlayer.height - 1, 0);
                 GL11.glVertex3d(entityX, entityY+entity.getEyeHeight(), entityZ);
             }
         }
@@ -194,15 +202,16 @@ public class Tracers
             for (Entity entity : mc.theWorld.loadedEntityList) {
                 if (!(entity instanceof EntityItem)) continue;
 
-                // convert entity to item and stack
+                // convert entity to items and stack
                 EntityItem entityItem = (EntityItem) entity;
                 ItemStack stack = entityItem.getEntityItem();
+                Item item = stack.getItem();
 
                 // skip if item Y pos < 55
                 if(entityItem.posY<55) continue;
 
-                // skip if item is a building block
-                if (isBuildingItem(stack)) continue;
+                // skip some items due to servers kill effects
+                if (isBuildingItem(stack) || ITEMS_TO_SKIP.contains(item)) continue;
 
                 // skip if we've already processed this item as part of a group
                 if (processedItems.contains(entityItem)) continue;
@@ -260,8 +269,34 @@ public class Tracers
                 }
 
                 // draw ray from player to item group
-                GL11.glVertex3d(0, mc.thePlayer.height - 1, 0); // Player position
+                GL11.glVertex3d(0, mc.thePlayer.height - 1, 0);
                 GL11.glVertex3d(itemX, itemY, itemZ);
+            }
+        }
+
+        if(showHitboxes){
+            for (Entity entity : mc.theWorld.loadedEntityList)
+            {
+                // only players hitboxes are rendered
+                if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) continue;
+
+                // calculate entity position relative to player
+                double entityX = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * event.partialTicks - playerX;
+                double entityY = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * event.partialTicks - playerY;
+                double entityZ = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * event.partialTicks - playerZ;
+
+                // neon pink color for hitbox
+                GL11.glColor4f(1f, 0.08f, 0.58f, 0.5f);
+
+                // get the entity's bounding box
+                AxisAlignedBB bb = entity.getEntityBoundingBox();
+
+                // offset the bounding box by the entity's position
+                bb = bb.offset(-entity.posX, -entity.posY, -entity.posZ);
+                bb = bb.offset(entityX, entityY, entityZ);
+
+                // draw the hitbox
+                drawOutlinedBoundingBox(bb);
             }
         }
 
@@ -313,6 +348,47 @@ public class Tracers
         } catch (Exception e) {
             System.err.println("Failed to save friends list: " + e.getMessage());
         }
+    }
+
+    private void drawOutlinedBoundingBox(AxisAlignedBB bb) {
+        // bottom
+        GL11.glVertex3d(bb.minX, bb.minY, bb.minZ);
+        GL11.glVertex3d(bb.maxX, bb.minY, bb.minZ);
+
+        GL11.glVertex3d(bb.maxX, bb.minY, bb.minZ);
+        GL11.glVertex3d(bb.maxX, bb.minY, bb.maxZ);
+
+        GL11.glVertex3d(bb.maxX, bb.minY, bb.maxZ);
+        GL11.glVertex3d(bb.minX, bb.minY, bb.maxZ);
+
+        GL11.glVertex3d(bb.minX, bb.minY, bb.maxZ);
+        GL11.glVertex3d(bb.minX, bb.minY, bb.minZ);
+
+        // top
+        GL11.glVertex3d(bb.minX, bb.maxY, bb.minZ);
+        GL11.glVertex3d(bb.maxX, bb.maxY, bb.minZ);
+
+        GL11.glVertex3d(bb.maxX, bb.maxY, bb.minZ);
+        GL11.glVertex3d(bb.maxX, bb.maxY, bb.maxZ);
+
+        GL11.glVertex3d(bb.maxX, bb.maxY, bb.maxZ);
+        GL11.glVertex3d(bb.minX, bb.maxY, bb.maxZ);
+
+        GL11.glVertex3d(bb.minX, bb.maxY, bb.maxZ);
+        GL11.glVertex3d(bb.minX, bb.maxY, bb.minZ);
+
+        // vertical edges
+        GL11.glVertex3d(bb.minX, bb.minY, bb.minZ);
+        GL11.glVertex3d(bb.minX, bb.maxY, bb.minZ);
+
+        GL11.glVertex3d(bb.maxX, bb.minY, bb.minZ);
+        GL11.glVertex3d(bb.maxX, bb.maxY, bb.minZ);
+
+        GL11.glVertex3d(bb.maxX, bb.minY, bb.maxZ);
+        GL11.glVertex3d(bb.maxX, bb.maxY, bb.maxZ);
+
+        GL11.glVertex3d(bb.minX, bb.minY, bb.maxZ);
+        GL11.glVertex3d(bb.minX, bb.maxY, bb.maxZ);
     }
 
 }

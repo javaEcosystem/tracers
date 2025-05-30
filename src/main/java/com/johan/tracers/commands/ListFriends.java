@@ -1,6 +1,5 @@
 package com.johan.tracers.commands;
 
-import com.johan.tracers.Tracers;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
@@ -10,6 +9,9 @@ import net.minecraft.util.EnumChatFormatting;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.johan.tracers.Tracers.friends;
+import static com.johan.tracers.Tracers.chatPrefix;
+
 public class ListFriends implements ICommand {
     @Override
     public String getCommandName() {
@@ -18,7 +20,7 @@ public class ListFriends implements ICommand {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return Tracers.chatPrefix + EnumChatFormatting.WHITE + "/lsfriends - Lists all players in your friends list";
+        return chatPrefix + EnumChatFormatting.WHITE + "/lsfriends - Lists all players in your friends list";
     }
 
     @Override
@@ -28,14 +30,14 @@ public class ListFriends implements ICommand {
 
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
-        if (Tracers.friends.isEmpty()) {
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.GRAY + "Your friends list is empty!"));
+        if (friends.isEmpty()) {
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.GRAY + "Your friends list is empty!"));
             return;
         }
 
-        sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.GOLD + "=== Friends List (" + Tracers.friends.size() + ") ==="));
-        for (String friend : Tracers.friends) {
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.AQUA + "- " + friend));
+        sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.GOLD + "=== Friends List (" + friends.size() + ") ==="));
+        for (String friend : friends) {
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.AQUA + "- " + friend));
         }
     }
 

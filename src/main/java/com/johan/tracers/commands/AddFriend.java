@@ -1,14 +1,16 @@
 package com.johan.tracers.commands;
 
-import com.johan.tracers.Tracers;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+
+import static com.johan.tracers.Tracers.friends;
+import static com.johan.tracers.Tracers.chatPrefix;
 
 public class AddFriend implements ICommand {
     @Override
@@ -18,27 +20,27 @@ public class AddFriend implements ICommand {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return Tracers.chatPrefix + EnumChatFormatting.WHITE + "/addfriend <name> - Adds a player to your friends list";
+        return chatPrefix + EnumChatFormatting.WHITE + "/addfriend <name> - Adds a player to your friends list";
     }
 
     @Override
     public List<String> getCommandAliases() {
-        return Arrays.asList("adf");
+        return Collections.singletonList("adf");
     }
 
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length < 1) {
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.RED + "Usage: " + getCommandUsage(sender)));
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.RED + "Usage: " + getCommandUsage(sender)));
             return;
         }
 
         String friendName = args[0];
-        if (Tracers.friends.contains(friendName)) {
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.GRAY + friendName + " is already in your friends list!"));
+        if (friends.contains(friendName)) {
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.GRAY + friendName + " is already in your friends list!"));
         } else {
-            Tracers.friends.add(friendName);
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.GREEN + "Added " + friendName + " to your friends list!"));
+            friends.add(friendName);
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.GREEN + "Added " + friendName + " to your friends list!"));
         }
     }
 

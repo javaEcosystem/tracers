@@ -1,6 +1,5 @@
 package com.johan.tracers.commands;
 
-import com.johan.tracers.Tracers;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
@@ -10,6 +9,9 @@ import net.minecraft.util.EnumChatFormatting;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.johan.tracers.Tracers.friends;
+import static com.johan.tracers.Tracers.chatPrefix;
+
 public class RemoveFriend implements ICommand {
     @Override
     public String getCommandName() {
@@ -18,7 +20,7 @@ public class RemoveFriend implements ICommand {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return Tracers.chatPrefix + EnumChatFormatting.WHITE + "/rmfriend <name> - Removes a player from your friends list";
+        return chatPrefix + EnumChatFormatting.WHITE + "/rmfriend <name> - Removes a player from your friends list";
     }
 
     @Override
@@ -29,15 +31,15 @@ public class RemoveFriend implements ICommand {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length < 1) {
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.RED + "Usage: " + getCommandUsage(sender)));
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.RED + "Usage: " + getCommandUsage(sender)));
             return;
         }
 
         String friendName = args[0];
-        if (Tracers.friends.remove(friendName)) {
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.RED + "Removed " + friendName + " from your friends list!"));
+        if (friends.remove(friendName)) {
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.RED + "Removed " + friendName + " from your friends list!"));
         } else {
-            sender.addChatMessage(new ChatComponentText(Tracers.chatPrefix + EnumChatFormatting.GRAY + friendName + " wasn't in your friends list!"));
+            sender.addChatMessage(new ChatComponentText(chatPrefix + EnumChatFormatting.GRAY + friendName + " wasn't in your friends list!"));
         }
     }
 
@@ -48,7 +50,7 @@ public class RemoveFriend implements ICommand {
 
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        return args.length == 1 ? Tracers.friends : null;
+        return args.length == 1 ? friends : null;
     }
 
     @Override

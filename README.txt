@@ -1,17 +1,16 @@
-1.8.9 Minecraft mod implementing tracers with a client-side friend list system B)
+1.8.9 Minecraft mod enhanced with OpenGL toolchain and a friend list system B)
 
 
 [Features]
 
 -> FPS display
--> Toggle tracers using the keybindings that you can set in minecraft controls settings
+-> Hitbox display
+-> Tracers display ( - neon pink rays for rare item drops
+                     - yellow rays for other item drops
+                     - green rays for friends
+                     - white rays for other players )
 
--> Rays are colored as follows :
-        - neon pink for rare item drops
-        - yellow for other item drops (building blocks not included)
-        - green for friends
-        - white for other players
-
+-> Toggle tracers and hitboxes using the keybindings that you can set in minecraft controls settings
 -> Add friends to your list using : /addfriend name or /adf name
 -> Remove friends from your list using : /rmfriend name or /rmf name or /removefriend name
 -> List your friends using : /lsfriends or /lsf or /listfriends

@@ -23,7 +23,7 @@ plugins {
 }
 */
 
-version = "1.3"
+version = "1.4"
 group= "com.johan.tracers" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "fps"
 

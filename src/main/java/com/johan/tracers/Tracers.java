@@ -38,7 +38,7 @@ public class Tracers
     public static final Minecraft mc = Minecraft.getMinecraft();
     public static RenderWorldLastEvent rwle;
     public static final String mod_id = "fps";
-    public static final String version = "1.3";
+    public static final String version = "1.4";
     public static final String chatPrefix = EnumChatFormatting.DARK_RED + "[Tracers] ";
 
     // player-related variables

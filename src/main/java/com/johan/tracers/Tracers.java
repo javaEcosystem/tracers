@@ -5,7 +5,6 @@ import com.johan.tracers.opengl.*;
 
 // minecraft lib
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.EnumChatFormatting;
@@ -40,31 +39,41 @@ public class Tracers
     public static RenderWorldLastEvent rwle;
     public static final String mod_id = "fps";
     public static final String version = "1.3";
+    public static final String chatPrefix = EnumChatFormatting.DARK_RED + "[Tracers] ";
+
+    // player-related variables
     public static double playerX;
     public static double playerY;
     public static double playerZ;
-    public static ArrayList<String> friends = new ArrayList<String>();
-    public static final String chatPrefix = EnumChatFormatting.DARK_RED + "[Tracers] ";
 
-    // boolean variables
-    private boolean showPlayerRays = false;
-    private boolean showItemRays = false;
-    private boolean showHitboxes = false;
+    // hud-related variables
+    public static boolean showFps = true;
+    public static boolean showPing = false;
+    public static boolean showEntities = false;
+    public static boolean showDirection = false;
+    public static boolean showCoords = false;
+    public static boolean showBiome = false;
+    public static boolean showDimension = false;
+    public static boolean showLightLvl = false;
 
-    // keybindings
+    // opengl-related variables
+    public static boolean showPlayerRays = false;
+    public static boolean showItemRays = false;
+    public static boolean showHitboxes = false;
     private final KeyBinding playerRaysKey = new KeyBinding("Toggle Player Rays", Keyboard.KEY_C, "Tracers");
     private final KeyBinding itemRaysKey = new KeyBinding("Toggle Item Rays", Keyboard.KEY_X, "Tracers");
     private final KeyBinding hitboxKey = new KeyBinding("Toggle Hitboxes", Keyboard.KEY_W, "Tracers");
 
-    // setup the built-in config utility
+    // friends-related variables
     public static Configuration config;
+    public static ArrayList<String> friends = new ArrayList<String>();
     private static final File CONFIG_DIR = new File(Minecraft.getMinecraft().mcDataDir, "config");
 
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
-        // initialize configuration
-        config = new Configuration(new File(CONFIG_DIR, "tracers.cfg"));
+        // init config
+        config = new Configuration(new File(CONFIG_DIR, "fps.cfg"));
 
         // listen to @SubscribeEvents
         MinecraftForge.EVENT_BUS.register(this);
@@ -76,7 +85,18 @@ public class Tracers
 
         // register commands
         ClientCommandHandler.instance.registerCommand(new AddFriend());
+        ClientCommandHandler.instance.registerCommand(new Biome());
+        ClientCommandHandler.instance.registerCommand(new Coords());
+        ClientCommandHandler.instance.registerCommand(new Dimension());
+        ClientCommandHandler.instance.registerCommand(new Direction());
+        ClientCommandHandler.instance.registerCommand(new Entities());
+        ClientCommandHandler.instance.registerCommand(new Fps());
+        ClientCommandHandler.instance.registerCommand(new HitboxCmd());
+        ClientCommandHandler.instance.registerCommand(new ItemRaysCmd());
+        ClientCommandHandler.instance.registerCommand(new Light());
         ClientCommandHandler.instance.registerCommand(new ListFriends());
+        ClientCommandHandler.instance.registerCommand(new Ping());
+        ClientCommandHandler.instance.registerCommand(new PlayerRaysCmd());
         ClientCommandHandler.instance.registerCommand(new RemoveFriend());
     }
 
@@ -104,23 +124,7 @@ public class Tracers
         // only render in the TEXT phase (where HUD text belongs)
         if (event.type != RenderGameOverlayEvent.ElementType.TEXT) return;
 
-        // get Minecraft's font renderer
-        FontRenderer renderer = mc.fontRendererObj;
-
-        // get current Minecraft FPS
-        int fps = Minecraft.getDebugFPS();
-
-        // save OpenGL state to prevent HUD corruption
-        GlStateManager.pushMatrix();
-        GlStateManager.pushAttrib();
-        GlStateManager.scale(0.85f, 0.85f, 1.0f);
-
-        // draw FPS on HUD
-        renderer.drawString("[FPS] " + fps, 350, 5, 0x00FF00);
-
-        // restore OpenGL state
-        GlStateManager.popAttrib();
-        GlStateManager.popMatrix();
+        Hud.render();
     }
 
     @SubscribeEvent

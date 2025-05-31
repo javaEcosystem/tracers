@@ -30,12 +30,7 @@ public class Hud {
         int fps = Minecraft.getDebugFPS();
 
         //get player ping
-        int ping;
-        try{
-            ping = mc.getNetHandler().getPlayerInfo(mc.thePlayer.getUniqueID()).getResponseTime();
-        } catch (Exception e){
-            ping = 0;
-        }
+        int ping = mc.getNetHandler().getPlayerInfo(mc.thePlayer.getUniqueID()).getResponseTime();
 
         // get entities count
         int entities = mc.theWorld.loadedEntityList.size();

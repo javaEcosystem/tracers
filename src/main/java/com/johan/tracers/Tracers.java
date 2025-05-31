@@ -127,7 +127,8 @@ public class Tracers
         // leave early if the world is not loaded
         if (mc.thePlayer==null || mc.theWorld==null || mc.getNetHandler()==null) return;
 
-        Hud.render();
+        // try-catch to handle errors
+        try{ Hud.render(); } catch (Exception ignored){ }
     }
 
     @SubscribeEvent

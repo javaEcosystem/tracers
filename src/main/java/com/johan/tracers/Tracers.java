@@ -124,6 +124,9 @@ public class Tracers
         // only render in the TEXT phase (where HUD text belongs)
         if (event.type != RenderGameOverlayEvent.ElementType.TEXT) return;
 
+        // leave early if the world is not loaded
+        if (mc.thePlayer==null || mc.theWorld==null || mc.getNetHandler()==null) return;
+
         Hud.render();
     }
 
